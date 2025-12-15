@@ -16,29 +16,35 @@ A fast, GPU-accelerated desktop application for transcribing audio files locally
 ## Quick Start (End Users)
 
 ### Using the Installer (Recommended)
-1. Download `whisper-transcribe-v0.1.0-setup.exe` from the [Releases](https://github.com/papacasper/whisper-transcribe/releases) page
-2. Run the installer - CUDA DLLs are bundled for GPU acceleration
+1. Download the latest setup executable from the [Releases](https://github.com/papacasper/whisper-transcribe/releases) page
+2. Run the installer - CUDA DLLs are bundled for zero-config GPU acceleration
 3. Launch from Start Menu or Desktop
-4. Download a Whisper model when prompted, or manually from [HuggingFace](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
+4. Download a Whisper model (recommend starting with `ggml-base.bin` for the best balance of speed and accuracy)
+   - Direct link: [ggml-base.bin](https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin) (~142 MB)
+   - Browse all models: [HuggingFace whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp/tree/main)
 
 ### Portable (ZIP)
 1. Download and extract the ZIP release
 2. Run `whisper-transcribe.exe`
-3. For GPU acceleration, ensure CUDA DLLs are in PATH (see Troubleshooting)
+3. Download a model (see above)
+4. **Note**: GPU acceleration requires CUDA Toolkit installed and DLLs in PATH (see Development Setup)
 
-## Development Requirements
+## Development Setup
 
-### Essential
-- Rust toolchain (1.70+)
-- A Whisper GGML model file (`.bin` format)
-- Windows 10/11 (primary target platform)
+For developers who want to build from source:
 
-### For GPU Acceleration (Optional)
-- NVIDIA GPU with CUDA compute capability 3.5+
-- NVIDIA GPU drivers (latest recommended)
-- CUDA Toolkit 13.0 or compatible version
+### Prerequisites
+- **Rust toolchain** (1.70+)
+- **Windows 10/11** (primary target platform)
+- **Whisper GGML model** (`.bin` format) - see Quick Start for download links
 
-## Installation
+### Optional: GPU Acceleration
+- **NVIDIA GPU** with CUDA compute capability 3.5+ (GTX 700 series or newer)
+- **NVIDIA GPU drivers** (latest recommended)
+- **CUDA Toolkit 13.0** or compatible version
+- **Visual Studio Build Tools** with C++ support (for building with CUDA)
+
+## Building from Source
 
 ### 1. Install Rust
 ```pwsh
@@ -91,23 +97,18 @@ whisper-rs = "0.15"
 
 ## GPU Acceleration
 
-This application is built with CUDA support enabled by default. The application will:
-1. **First attempt**: Use your NVIDIA GPU via CUDA for faster transcription
-2. **Fallback**: Automatically switch to CPU if GPU initialization fails
-
-### System Requirements for GPU
-- **GPU**: NVIDIA GPU with CUDA compute capability 3.5 or higher (e.g., GTX 700 series or newer)
-- **Drivers**: Latest NVIDIA GPU drivers
-- **CUDA**: CUDA Toolkit 13.0 (installed via the instructions above)
-- **Build Tools**: Visual Studio 2019/2022 with C++ build tools (MSVC)
+The application automatically detects and uses GPU acceleration:
+- **Installer users**: GPU support works out-of-the-box (CUDA DLLs bundled)
+- **Portable/dev builds**: Requires CUDA Toolkit installed with DLLs in PATH
+- **Automatic fallback**: If GPU initialization fails, the app seamlessly switches to CPU
 
 ### Verifying GPU Support
-Check if your GPU is detected:
+Check if your NVIDIA GPU is detected:
 ```pwsh
 nvidia-smi
 ```
 
-You should see your GPU listed with CUDA Version 13.0 or compatible.
+You should see your GPU listed. When transcribing, GPU usage will show in Task Manager or `nvidia-smi`.
 
 ## Usage Guide
 
@@ -141,19 +142,63 @@ The following formats are automatically decoded:
 
 All audio is automatically converted to mono 16kHz (Whisper's required format).
 
+## FAQ
+
+**Q: Does this work offline?**  
+A: Yes! All processing happens locally on your machine. No internet connection required after downloading the model.
+
+**Q: How long does transcription take?**  
+A: Depends on your hardware and model size. With GPU acceleration and `ggml-base.bin`, expect roughly real-time or faster (e.g., 1 minute of audio in ~30-60 seconds). CPU-only is slower.
+
+**Q: Can I use AMD GPUs?**  
+A: No, currently only NVIDIA GPUs are supported via CUDA. AMD users will use CPU processing automatically.
+
+**Q: What's the best model to start with?**  
+A: `ggml-base.bin` offers the best balance of speed and accuracy for most users. Try `ggml-tiny.bin` if you need faster processing, or `ggml-small.bin` for better accuracy.
+
+**Q: Why isn't my GPU being used?**  
+A: If using the portable ZIP, ensure CUDA Toolkit is installed and DLLs are in PATH. The installer version bundles everything. Check Task Manager GPU usage during transcription.
+
+**Q: Can I transcribe multiple files at once?**  
+A: Currently, the app processes one file at a time. You'll need to transcribe files sequentially.
+
+**Q: What languages are supported?**  
+A: Whisper supports 99 languages. The model automatically detects the language, though accuracy varies by language and model size.
+
+## Known Limitations
+
+- **Platform**: Windows only (primary support for Windows 10/11)
+- **GPU**: NVIDIA GPUs only via CUDA (AMD/Intel not supported)
+- **Model download**: Models must be downloaded separately (~75 MB to 2.9 GB depending on size)
+- **Single file processing**: No batch transcription support yet
+- **Real-time transcription**: Not supported - designed for pre-recorded audio files
+
 ## Troubleshooting
 
-### Application Won't Launch
+### For Installer Users
 
-Exit code -1073741515 (0xC0000135): Missing DLL dependencies
-- Solution: Add CUDA DLLs to PATH (see Installation step 2)
-- Verify CUDA installation: Run `nvidia-smi` to check CUDA is installed and the driver is working
-- The CUDA DLLs should be in: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin\x64\`
+**Application won't launch or crashes:**
+- Ensure you have the latest NVIDIA drivers if using a GPU
+- Try running as Administrator
+- Check Windows Event Viewer for error details
+- Reinstall the application
 
-Application crashes immediately:
+**GPU not being used:**
+- Verify your GPU is supported (GTX 700 series or newer)
+- Update NVIDIA drivers
+- The app will automatically fall back to CPU if GPU fails
+
+### For Portable/Developer Builds
+
+**Exit code -1073741515 (0xC0000135) - Missing DLL dependencies:**
+- Install CUDA Toolkit 13.0: `winget install Nvidia.CUDA --version 13.0`
+- Add CUDA DLLs to PATH (see Building from Source section)
+- Or build without CUDA support (see "Build Without GPU Support")
+
+**Application crashes immediately:**
+- Ensure CUDA_PATH environment variable is set
+- Verify CUDA DLLs are in: `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin\x64\`
 - Try building without CUDA (see "Build Without GPU Support")
-- Ensure you have the latest NVIDIA drivers
-- Check Windows Event Viewer for details
 
 ### Build Errors
 
@@ -201,23 +246,26 @@ GPU not used:
 ## Technical Details
 
 ### Architecture
-- Frontend: eframe/egui (Rust GUI)
-- Audio: symphonia (decode) + rubato (resample)
-- ML: whisper-rs → whisper.cpp (C++)
-- GPU: CUDA via cuBLAS
+- **Frontend**: eframe/egui (Rust GUI framework)
+- **Audio Processing**: symphonia (decode) + rubato (resample to 16kHz mono)
+- **ML Backend**: whisper-rs → whisper.cpp (C++ inference engine)
+- **GPU Acceleration**: CUDA via cuBLAS for matrix operations
+- **Cross-compilation**: Native Windows application (no console window)
 
-### Dependencies
-- whisper-rs v0.15
-- eframe v0.30
-- symphonia v0.5
-- rubato v0.16
-- rfd v0.15
-- arboard v3
-- anyhow v1.0
+### Key Dependencies
+- **whisper-rs** v0.15 - Rust bindings for whisper.cpp
+- **eframe** v0.30 - GUI framework
+- **symphonia** v0.5 - Audio codec support
+- **rubato** v0.16 - Audio resampling
+- **rfd** v0.15 - Native file dialogs
+- **arboard** v3 - Clipboard support
+- **anyhow** v1.0 - Error handling
 
-### Build Process (CUDA)
-- whisper-rs-sys builds whisper.cpp with `GGML_CUDA=ON`
-- Links against CUDA libs; runtime requires: `cudart64_13.dll`, `cublas64_13.dll`, `cublasLt64_13.dll`
+### Build Process with CUDA
+- `whisper-rs-sys` builds `whisper.cpp` with `GGML_CUDA=ON`
+- Links against CUDA libraries during compilation
+- Runtime requires: `cudart64_13.dll`, `cublas64_13.dll`, `cublasLt64_13.dll`
+- Installer bundles these DLLs (~507 MB) for portable GPU support
 
 ## Contributing
 - Fork, create a branch, make changes, test on Windows, then open a PR
