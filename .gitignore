@@ -1,0 +1,22 @@
+/target
+
+# Whisper model files (can be very large)
+models/*
+!models/.gitkeep
+
+# Audio test files
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+
+# Claude conversation history
+CLAUDE.md
+.claude/
+
+# Release builds and installers
+release/
+
+# Installer output (keep source script)
+installer/*.exe

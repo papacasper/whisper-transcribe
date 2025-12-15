@@ -1,0 +1,17 @@
+[package]
+name = "whisper-transcribe"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Enable GPU inference via CUDA (NVIDIA)
+whisper-rs = { version = "0.15", features = ["cuda"] }
+anyhow = "1.0"
+eframe = "0.30"
+rfd = "0.15"
+arboard = "3"
+symphonia = { version = "0.5", features = ["mp3", "wav", "flac", "ogg", "aac", "pcm", "vorbis"] }
+rubato = "0.16"
+reqwest = { version = "0.12", features = ["stream"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+futures-util = "0.3"
